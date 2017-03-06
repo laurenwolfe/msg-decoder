@@ -1,49 +1,64 @@
 import java.util.ArrayList;
 
 public class MessageFrameDecoder implements FrameDecoder {
-  private Message tempMsg;
   private ArrayList<Message> messages;
-  private byte bufferIdx;
+  private byte byteArrayIdx;
+  private Message currentMsg;
 
   public MessageFrameDecoder() {
     this.messages = new ArrayList<>();
-    this.bufferIdx = 0;
-    this.tempMsg = null;
+    this.byteArrayIdx = 0;
+    this.currentMsg = null;
   }
 
   public ArrayList<Message> readBytes(byte[] bytes) {
+    while(byteArrayIdx + 1 < bytes.length) {
+      byte msgLength, msgType;
 
-    while(bufferIdx + 1 < bytes.length) {
-      //retrieve metadata bytes
-      byte msgLength = bytes[bufferIdx];
-      byte msgType = bytes[bufferIdx + 1];
-      bufferIdx += 2;
-
-      if(msgLength <= 0) {
-        throw new IllegalArgumentException("Invalid byte length argument: " + msgLength);
+      if(currentMsg == null) {
+        //if starting from a new message, retrieve message length and type
+        msgLength = bytes[byteArrayIdx];
+        msgType = bytes[byteArrayIdx + 1];
+        byteArrayIdx += 2;
+      } else {
+        //otherwise, acquire the metadata from the Message object
+        msgLength = currentMsg.getMsgLength();
+        msgType = currentMsg.getMsgType();
       }
 
-      //determine message type; see MsgTypes enum class
-      MsgTypes currType = MsgTypes.getType(msgType);
+      ProcessArray(msgType, msgLength);
 
-      if(currType == MsgTypes.PICK) {
-        if(tempMsg == null) {
-          tempMsg = new Pick(msgLength);
-        }
-
-        //add new bytes from stream until array is filled
-        bufferIdx = tempMsg.addBytes(bytes, bufferIdx);
-
-        //if message transmission has completed, add msg to output list
-        if(tempMsg.isFilled()) {
-          messages.add(tempMsg);
-          tempMsg = null;
-        }
-      } else if(currType == MsgTypes.DROP) {
-        messages.add(new Drop(msgLength));
+      if(msgLength < 1) {
+        throw new IllegalArgumentException("Message length must be a positive " +
+            "number (given: " + msgLength + ")");
       }
+
     }
+    byteArrayIdx = 0;
+    currentMsg = null;
     return messages;
   }
-}
 
+  private void ProcessArray(byte[] bytes, byte msgType, byte msgLength) {
+    MsgTypes type = MsgTypes.getType(msgType);
+
+    if(type == MsgTypes.DROP) {
+      messages.add(new Drop(msgLength));
+      return;
+    }
+
+    if(type == MsgTypes.PICK) {
+      if(currentMsg == null) {
+        currentMsg = new Pick(msgLength);
+      }
+
+      byteArrayIdx = currentMsg.addBytes(bytes, byteArrayIdx);
+
+      //Message is fully received, add to message list and reset temp Message object
+      if(currentMsg.isFilled()) {
+        messages.add(currentMsg);
+        currentMsg = null;
+      }
+    }
+  }
+}

@@ -9,6 +9,10 @@ public enum MsgTypes {
     this.typeCode = typeCode;
   }
 
+  public byte getTypeByte(MsgTypes type) {
+    return type.typeCode;
+  }
+
   public static MsgTypes getType(byte testType) {
     //Current spec allows for 256 types as a max, so I consider this to be
     //sufficiently efficient as a check; additionally, no additional code

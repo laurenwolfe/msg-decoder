@@ -1,16 +1,26 @@
 abstract class Message {
   private final byte msgLength;
+  private final MsgTypes msgType;
   protected byte[] msgBytes;
   protected byte idx;
 
-  public Message(byte length) {
+  public Message(byte length, MsgTypes msgType) {
     this.msgLength = length;
+    this.msgType = msgType;
     this.msgBytes = new byte[length];
     this.idx = 0;
   }
 
+  byte getMsgLength() {
+    return msgLength;
+  }
+
+  MsgTypes getMsgType() {
+    return msgType;
+  }
+
   byte addBytes(byte[] bytes, byte bufferIdx) {
-    return 0x0;
+    return bufferIdx;
   }
 
   /**

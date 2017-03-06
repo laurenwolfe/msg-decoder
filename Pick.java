@@ -3,7 +3,7 @@ public class Pick extends Message {
   //private byte idx;
 
   public Pick(byte length) {
-      super(length);
+      super(length, MsgTypes.PICK);
   }
 
   byte addBytes(byte[] bytes, byte bufferIdx) {
@@ -14,5 +14,4 @@ public class Pick extends Message {
     }
     return bufferIdx;
   }
-
 }
